@@ -532,7 +532,8 @@ driftCorr <- function(QCDriftCalc,
 cleanVar <- function(QCCorr,
                         CVlimit,
                         report = FALSE,
-                        reportPath) {
+                        reportPath,
+                        NAs) {
     QCFeats <- QCCorr$QCFeats
     removeFeats <- QCCorr$removeFeats
     if (!is.null(removeFeats)) {
@@ -543,10 +544,27 @@ cleanVar <- function(QCCorr,
     QCFeatsCorr <- QCCorr$QCFeatsCorr
     cvIndex <- which(cv(QCFeatsCorr) > CVlimit)
     finalIndex <- rep(TRUE, ncol(QCFeatsCorr))
+    names(finalIndex) <- colnames(QCFeatsCorr)
+    
     if (length(cvIndex) > 0) finalIndex[cvIndex] <- FALSE
     QCFeatsFinal <- QCFeatsCorr[, finalIndex]
+
+    if(any(NAs)){
+        finalIndexNames <- names(finalIndex)
+        whichNAs <- which(NAs)
+        
+        for(i in 1:length(which(NAs))){
+            finalIndexNames <- append(finalIndexNames,
+                                      names(NAs)[whichNAs[i]],
+                                      after=(whichNAs[i]-1))
+            finalIndex <- append(finalIndex, T, after=(whichNAs[i]-1))
+        }
+        
+        names(finalIndex)  <- finalIndexNames
+    }
+    
     if (QCCorr$RefType == "one") {
-        RefFeatsFinal <- QCCorr$RefFeatsCorr[, finalIndex]
+        RefFeatsFinal <- tempRefFeatsCorr[, finalIndex]    #### Problem here
     }
     TestFeatsFinal <- QCCorr$TestFeatsCorr[, finalIndex]
     finalVars <- colnames(QCFeatsFinal)
@@ -700,7 +718,8 @@ driftWrap <- function(QCObject,
     driftList <- cleanVar(driftList,
         CVlimit = CVlimit,
         report = report,
-        reportPath = reportPath
+        reportPath = reportPath,
+        NAs = QCObject$NAs
     )
     return(driftList)
 }

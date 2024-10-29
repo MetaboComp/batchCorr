@@ -187,8 +187,9 @@ normalizeBatches <- function(peakTableCorr,
             # Calculate correction factor for "population" samples and use for
             # normalizaiton
             correctionFactor <- refIntensity / RefMeanIntensity[b, feat]
-            peakTableNormalized[batches == uniqBatch[b], feat] <- 
-                peakTableCorr[batches == uniqBatch[b], feat] * correctionFactor
+            peakTableNormalized[which(batches == uniqBatch[b]), feat] <- 
+                peakTableCorr[which(batches ==
+                                        uniqBatch[b]), feat] * correctionFactor
         }
 
         # Store "flag" of whether the feature was normalized by ref samples
@@ -211,16 +212,16 @@ normalizeBatches <- function(peakTableCorr,
             # Correct those by population median approach
             for (n in WhichPOPCorr) {
                 populationMedian <- 
-                    median(peakTableOrg[batches == uniqBatch[n] &
-                                            popSample, feat])
+                    median(peakTableOrg[which(batches == uniqBatch[n] &
+                                                  popSample), feat])
 
                 # "Fix" for if population median == 0, which will
                 # cause division by zero
                 if (populationMedian == 0) {
                     if (medianZero == "min") {
                         populationMedian <- 
-                                peakTableOrg[batches == uniqBatch[n] & 
-                                            popSample, feat]
+                                peakTableOrg[which(batches == uniqBatch[n] &
+                                                       popSample), feat]
                         populationMedian <- 
                             ifelse(sum(populationMedian != 0) > 0,
                             min(populationMedian[populationMedian != 0]),
@@ -228,8 +229,8 @@ normalizeBatches <- function(peakTableCorr,
                         )
                     } else if (medianZero == "mean") {
                         populationMedian <- 
-                            mean(peakTableOrg[batches == uniqBatch[n] &
-                                                popSample, feat])
+                            mean(peakTableOrg[which(batches == uniqBatch[n] &
+                                                        popSample), feat])
                     } else {
                         stop("Other options not included at present.")
                     }
@@ -240,8 +241,8 @@ normalizeBatches <- function(peakTableCorr,
                 correctionFactor <- ifelse(populationMedian != 0,
                                         refCorrMedian / populationMedian,
                                         1)
-                peakTableNormalized[batches == uniqBatch[n], feat] <- 
-                    peakTableOrg[batches == uniqBatch[n], feat] *
+                peakTableNormalized[which(batches == uniqBatch[n]), feat] <- 
+                    peakTableOrg[which(batches == uniqBatch[n]), feat] *
                     correctionFactor
             }
         }

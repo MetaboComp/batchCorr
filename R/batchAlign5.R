@@ -387,9 +387,10 @@ alignIndex <- function(batchflag,
     a2 <- a1 <- align(grpSub, mz, rt, mzdiff = mzdiff, rtdiff = rtdiff)
     a1Clust <- a1$clusters
     if (is.null(a1Clust)) {
-        stop("There are no alignment candidates.
+        message("There are no alignment candidates.
         Therefore, between-batch alignment is not possible.
         Consider expanding mzdiff and/or rtdiff.")
+        return(NULL)
     }
     splits <- which(a1Clust$dotProd != 0)
     if (report) pdf(file = paste(reportPath, reportName, ".pdf", sep = ""))
