@@ -564,7 +564,7 @@ cleanVar <- function(QCCorr,
     }
     
     if (QCCorr$RefType == "one") {
-        RefFeatsFinal <- tempRefFeatsCorr[, finalIndex]    #### Problem here
+        RefFeatsFinal <- QCCorr$RefFeatsCorr[, finalIndex]    #### Problem here
     }
     TestFeatsFinal <- QCCorr$TestFeatsCorr[, finalIndex]
     finalVars <- colnames(QCFeatsFinal)
