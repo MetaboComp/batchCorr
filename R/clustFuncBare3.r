@@ -142,6 +142,19 @@ clust <- function(QCInjs,
                             report,
                             reportPath) {
     rmsdRaw <- rmsDist(QCFeats)
+    
+    #Extrapolation if batchTotalInj longer than QC inj
+    if(length(Pred$x) > length(batchTotalInj)){
+        injDiff <- (length(batchTotalInj) - length(Pred$x))
+        Pred$y <- c(Pred$y,
+                    rep(Pred$y[length(Pred$y)], injDiff))
+        Pred$x <- batchTotalInj
+        
+        corMat <- rbind(corMat,
+                        matrix(nrow = injDiff,
+                               ncol = ncol(corMat)))
+    }
+    
     for (n in seq_len(nclass)) {
         # Allocate matrix (for drift corrected variables) for later QC dist calc
         QCFeatsCorr <- QCFeats
@@ -167,18 +180,6 @@ clust <- function(QCInjs,
                 Pred <- predict(loessFit, data.frame(QCInjs = injs))
                 Pred <- data.frame(x = injs, y = Pred)
             }
-        }
-        
-        #Extrapolation if batchTotalInj longer than QC inj
-        if(length(Pred$x) > length(batchTotalInj)){
-            injDiff <- (length(batchTotalInj) - length(Pred$x))
-            Pred$y <- c(Pred$y,
-                        rep(Pred$y[length(Pred$y)], injDiff))
-            Pred$x <- batchTotalInj
-            
-            corMat <- rbind(corMat,
-                            matrix(nrow = injDiff,
-                                   ncol = ncol(corMat)))
         }
         
         # Calculate correction factors for all injections
