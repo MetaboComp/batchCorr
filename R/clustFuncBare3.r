@@ -168,6 +168,19 @@ clust <- function(QCInjs,
                 Pred <- data.frame(x = injs, y = Pred)
             }
         }
+        
+        #Extrapolation if batchTotalInj longer than QC inj
+        if(length(Pred$x) > length(batchTotalInj)){
+            injDiff <- (length(batchTotalInj) - length(Pred$x))
+            Pred$y <- c(Pred$y,
+                        rep(Pred$y[length(Pred$y)], injDiff))
+            Pred$x <- batchTotalInj
+            
+            corMat <- rbind(corMat,
+                            matrix(nrow = injDiff,
+                                   ncol = ncol(corMat)))
+        }
+        
         # Calculate correction factors for all injections
         corFact <- Pred$y[1] / Pred$y
         # Store cluster correction factors in "master" matrix
