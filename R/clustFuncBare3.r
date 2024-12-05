@@ -145,7 +145,7 @@ clust <- function(QCInjs,
     
     #Extrapolation if batchTotalInj longer than QC inj
     if(length(batchTotalInj) > length(injs)){
-        injDiff <- (length(batchTotalInj) - length(Pred$x))
+        injDiff <- (length(batchTotalInj) - length(injs))
         corMat <- rbind(corMat,
                         matrix(nrow = injDiff,
                                ncol = ncol(corMat)))
