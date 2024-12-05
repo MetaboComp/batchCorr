@@ -144,12 +144,8 @@ clust <- function(QCInjs,
     rmsdRaw <- rmsDist(QCFeats)
     
     #Extrapolation if batchTotalInj longer than QC inj
-    if(length(Pred$x) > length(batchTotalInj)){
+    if(length(batchTotalInj) > length(Pred$x)){
         injDiff <- (length(batchTotalInj) - length(Pred$x))
-        Pred$y <- c(Pred$y,
-                    rep(Pred$y[length(Pred$y)], injDiff))
-        Pred$x <- batchTotalInj
-        
         corMat <- rbind(corMat,
                         matrix(nrow = injDiff,
                                ncol = ncol(corMat)))
@@ -180,6 +176,13 @@ clust <- function(QCInjs,
                 Pred <- predict(loessFit, data.frame(QCInjs = injs))
                 Pred <- data.frame(x = injs, y = Pred)
             }
+        }
+        
+        #Extrapolation if batchTotalInj longer than QC inj
+        if(length(batchTotalInj) > length(Pred$x)){
+            Pred$y <- c(Pred$y,
+                        rep(Pred$y[length(Pred$y)], injDiff))
+            Pred$x <- batchTotalInj
         }
         
         # Calculate correction factors for all injections
