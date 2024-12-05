@@ -144,7 +144,7 @@ clust <- function(QCInjs,
     rmsdRaw <- rmsDist(QCFeats)
     
     #Extrapolation if batchTotalInj longer than QC inj
-    if(length(batchTotalInj) > length(Pred$x)){
+    if(length(batchTotalInj) > length(injs)){
         injDiff <- (length(batchTotalInj) - length(Pred$x))
         corMat <- rbind(corMat,
                         matrix(nrow = injDiff,
