@@ -275,6 +275,7 @@ clust <- function(QCInjs,
 driftCalc <- function(QCClust,
                         smoothFunc = c("spline", "loess"),
                         spar,
+                        batchTotalInj,
                         report,
                         reportPath) {
     smoothFunc <- match.arg(smoothFunc)
@@ -321,8 +322,8 @@ driftCalc <- function(QCClust,
     driftCalc_list <- .calc_driftCalc(
         nclass = nclass, classes = classes,
         varClust = varClust, QCFeats = QCFeats,
-        QCInjs = QCInjs, injs = injs, batchTotalInj=batchTotalInj, spar = spar,
-        corMat = corMat, deltaDist = deltaDist,
+        QCInjs = QCInjs, injs = injs, batchTotalInj = batchTotalInj,
+        spar = spar, corMat = corMat, deltaDist = deltaDist,
         rmsdRaw = rmsdRaw, cvRaw = cvRaw,
         cvs = cvs, ratios = ratios, cvCorr = cvCorr,
         smoothFunc, report = report,
@@ -722,6 +723,7 @@ driftWrap <- function(QCObject,
     driftList <- driftCalc(driftList,
         smoothFunc = smoothFunc,
         spar = spar,
+        batchTotalInj = BatchObject$inj,
         report = report,
         reportPath
     )
