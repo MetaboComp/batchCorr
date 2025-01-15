@@ -2,9 +2,12 @@
 % Please edit documentation in R/alignBatches.R
 \name{alignBatches}
 \alias{alignBatches}
-\title{Perform multi-batch alignment to merge features artificially split between batches}
+\alias{.alignBatches}
+\alias{alignBatches,ANY,ANY-method}
+\alias{alignBatches,SummarizedExperiment,SummarizedExperiment-method}
+\title{Between-batch alignment of features}
 \usage{
-alignBatches(
+.alignBatches(
   peakInfo,
   PeakTabNoFill,
   PeakTabFilled,
@@ -17,52 +20,134 @@ alignBatches(
   report = TRUE,
   reportPath = NULL
 )
+
+\S4method{alignBatches}{ANY,ANY}(
+  peakInfo,
+  PeakTabNoFill,
+  PeakTabFilled,
+  batches,
+  sampleGroups,
+  selectGroup = "QC",
+  NAhard = 0.8,
+  mzdiff = 0.002,
+  rtdiff = 15,
+  report = TRUE,
+  reportPath = NULL
+)
+
+\S4method{alignBatches}{SummarizedExperiment,SummarizedExperiment}(
+  PeakTabNoFill,
+  PeakTabFilled,
+  batches,
+  sampleGroups,
+  assay.type1 = NULL,
+  assay.type2 = NULL,
+  name = NULL,
+  mz_col = "mz",
+  rt_col = "rt",
+  ...
+)
 }
 \arguments{
 \item{peakInfo}{matrix with mz and rt in columns 1:2 (see e.g. ?peakInfo)}
 
-\item{PeakTabNoFill}{Multi-batch peak table including missing values}
+\item{PeakTabNoFill}{SummarizedExperiment object or matrix before gap-filling}
 
-\item{PeakTabFilled}{Multi-batch peak table without missing values}
+\item{PeakTabFilled}{SummarizedExperiment object or matrix without missing 
+values}
 
-\item{batches}{Vector (length=nrow(PeakTab)) of batch identifiers}
+\item{batches}{character scalar or factor, batch labels}
 
-\item{sampleGroups}{Vector (length=nrow(PeakTab)) of sample type (e.g. "sample", "QC", "Ref)}
+\item{sampleGroups}{character scalar or character, group labels}
 
-\item{selectGroup}{Which sample type to base alignment on (e.g. "sample", "QC" or "Ref")}
+\item{selectGroup}{character scalar, identifier of QC samples}
 
-\item{NAhard}{proportion of NAs within batch for feature to be considered missing}
+\item{NAhard}{numeric scalar, proportion of NAs within batch for feature to 
+be considered missing}
 
-\item{mzdiff}{Tolerance for difference in m/z}
+\item{mzdiff}{numeric scalar, tolerance for difference in m/z}
 
-\item{rtdiff}{Tolerance for difference in retention time}
+\item{rtdiff}{numeric scalar, tolerance for difference in retention time}
 
-\item{report}{Whether to export diagnostic plots into your work directory (defaults to TRUE)}
+\item{report}{boolean, whether to export diagnostic plots into your work 
+directory (default: TRUE)}
 
-\item{reportPath}{directory path for report}
+\item{reportPath}{character scalar, directory path for report}
+
+\item{assay.type1}{character scalar, assay of PeakTabNoFill to be used in 
+case of multiple assays}
+
+\item{assay.type2}{character scalar, assay of PeakTabFilled to be used in
+case of multiple assays}
+
+\item{name}{character scalar, name of the resultant assay in case of 
+multiple assays}
+
+\item{mz_col}{character scalar, name of column containing mass information}
+
+\item{rt_col}{character scalar, name of column for retention time}
+
+\item{...}{optional arguments not used}
 }
 \value{
-batchAlign Object
-
-Aligned peak table available under $PTalign
-
-Returns NULL if no alignment candidates can be found
+a SummarizedExperiment object as PeakTabFill with the the aligned 
+matrix or a list of six:
+\itemize{
+  \item PTalign: the aligned peak table
+  \item boolAveragedAlign: boolean vector of final features where alignment 
+    has been made using feature averaging
+  \item PTfill: peaktable without missing values (indata)
+  \item boolKeep: boolean vector of features kept after alignment
+  \item boolAveragedFill boolean vector of original features where alignment 
+    has been made using feature averaging
+  \item aI: alignIndex object (indata)
+}
 }
 \description{
-Perform multi-batch alignment to merge features artificially split between batches
+Multi-batch alignment of features artificially split between batches.
+}
+\details{
+A basic method with matrices and SummarizedExperiment is supported. For 
+grouping variables such as batches, the basic method expects vectors, while 
+the SummarizedExperiment method expects the names of the respective columns 
+in PeakTabFilled. The basic method returns a list with the aligned peak 
+table and information about the process, whereas the SummarizedExperiment 
+method assigns the aligned peak table to the object supplied to 
+PeakTabFilled.
 }
 \examples{
-\dontshow{.old_wd <- setwd(tempdir())}
-data('ThreeBatchData')
-# Extract peakinfo (i.e. m/z and rt of features). These column names have 2
-# leading characters describing LC-MS mode -> start at 3
-peakIn <- peakInfo(PT = PTnofill, sep = '@', start = 3)  
-# Perform multi-batch alignment
-alignBat <- alignBatches(peakInfo = peakIn, PeakTabNoFill = PTnofill,
-                         PeakTabFilled = PTfill, batches = meta$batch,
-                         sampleGroups = meta$grp, selectGroup = 'QC',
-                         reportPath = "drift_report/")
-# Extract new peak table
-PT <- alignBat$PTalign 
-\dontshow{setwd(.old_wd)}
+\dontshow{
+.old_wd <- setwd(tempdir())
+}
+data("ThreeBatchData")
+# Basic method
+## Extract peakinfo (i.e. m/z and rt of features).
+peakIn <- peakInfo(PT = PTnofill, sep = "@", start = 3)
+## Perform multi-batch alignment
+alignBat <- alignBatches(
+    peakInfo = peakIn, PeakTabNoFill = PTnofill,
+    PeakTabFilled = PTfill, batches = meta$batch,
+    sampleGroups = meta$grp, selectGroup = "QC",
+    reportPath = "drift_report/"
+)
+## Extract new peak table
+PT <- alignBat$PTalign
+
+# SummarizedExperiment
+## Construct SummarizedExperiment
+peaks <- SimpleList(t(PTnofill), t(PTfill))
+sampleData <- meta
+featureData <- peakInfo(PT = PTnofill, sep = "@", start = 3)
+rownames(featureData) <- rownames(peaks[[1]])
+se <- SummarizedExperiment(assays = peaks, colData = sampleData, 
+                           rowData = featureData)
+names(assays(se)) <- c("nofill", "fill")
+
+se <- alignBatches(PeakTabNoFill = se, PeakTabFilled = se,
+                   batches = "batch", sampleGroups = "grp", report = FALSE,
+                   assay.type1 = "nofill", assay.type2 = "fill", 
+                   name = "aligned", rt_col = "rt", mz_col = "mz")
+\dontshow{
+setwd(.old_wd)
+}
 }

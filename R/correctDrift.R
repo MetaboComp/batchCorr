@@ -1,28 +1,43 @@
 #' Within-batch signal intensity drift correction
 #'
-#' @param peakTable Batch peak table
-#' @param injections Injection number in sequence
-#' @param sampleGroups Vector (length=nrow(PeakTab)) of sample type 
-#' (e.g. "sample", "QC", "Ref)
-#' @param QCID QC identifier in sampleGroups (defaults to "QC")
-#' @param RefID Optional identifier in sampleGroups of external reference 
-#' samples for unbiased assessment of drift correction 
-#' (see batchCorr tutorial at Gitlab page)
-#' @param modelNames Which MClust geometries to test (see mclust documentation)
-#' @param G Which numbers of clusters to test (see mclust documentation)
-#' @param smoothFunc choice of regression function: spline or loess 
-#' (defaults to spline)
-#' @param spar smoothing parameter for spline or loess (defaults to 0.2)
-#' @param CVlimit QC feature CV limit as final feature inclusion criterion
-#' @param report Boolean whether to print pdf reports of drift models
-#' @param reportPath directory path for report
+#' Correct drift with cluster-based drift correction. 
 #'
-#' @return A driftCorrection object
-#' @return $actionInfo (to see what happened to each cluster)
-#' @return $testFeatsCorr (to extract drift-corrected data) and
-#' @return $testFeatsFinal (to extract drift-corrected data which 
-#' pass the criterion that QC CV < CVlimit.
-#' @export
+#' A basic method for matrix and SummarizedExperiment is supported. For 
+#' grouping variables such as sampleGroups, the basic method expects vectors, 
+#' while the SummarizedExperiment method expects the names of the respective 
+#' columns. The basic method returns a list with the corrected peak table and 
+#' information about the process, whereas the SummarizedExperiment method 
+#' assigns the corrected peak table to the object supplied. 
+#'
+#' @param peakTable SummarizedExperiment object or matrix
+#' @param injections character scalar or numeric, injection order
+#' @param sampleGroups character scalar or character, group labels
+#' @param QCID character scalar, identifier of QC samples
+#' @param RefID character scalar, identifier of external reference 
+#' samples for unbiased assessment of drift correction 
+#' @param modelNames character, Which mclust geometries to test
+#' @param G integer, numbers of clusters to test
+#' @param smoothFunc character scalar, choice of regression function: 
+#' spline or loess (default: spline)
+#' @param spar numeric, smoothing parameter value (defaults to 0.2)
+#' @param CVlimit coefficient of variance threshold for filtering 
+#' (default = 0.3)
+#' @param report boolean, whether to print pdf reports of drift models
+#' @param reportPath character scalar, directory path for report
+#' @param assay.type character scalar, assay of to be used in case of multiple 
+#' assays
+#' @param name character scalar, name of the resultant assay in case of multiple
+#' assays
+#' @param ... optional arguments (not used)
+#'
+#' @return A SummarizedExperiment object with the corrected matrix or a list, 
+#' including the corrected matrix and processing information:
+#' \itemize{
+#'   \item actionInfo: see what happened to each cluster
+#'   \item testFeatsCorr: to extract drift-corrected data
+#'   \item testFeatsFinal: to extract drift-corrected data which pass the 
+#'     criterion QC CV < CVlimit
+#' }
 #'
 #' @examples
 #' \dontshow{
@@ -47,21 +62,30 @@
 #'     G = seq(5, 35, by = 3), modelNames = c("VVE", "VEE"),
 #'     reportPath = "drift_report/"
 #' )
-#' # More unbiased drift correction using QCs & external reference samples
-#' FCorr <- correctDrift(
-#'     peakTable = batchF$peakTable,
-#'     injections = batchF$meta$inj,
-#'     sampleGroups = batchF$meta$grp, QCID = "QC",
-#'     RefID = "Ref", G = seq(5, 35, by = 3),
-#'     modelNames = c("VVE", "VEE"),
-#'     reportPath = "drift_report/"
-#' )
-#' # Merge batches for batch normalization, for example
-#' mergedData <- mergeBatches(list(BCorr, FCorr))
+#' # Using SummarizedExperiment, more unbiased drift correction using QCs &
+#' # external reference samples
+#' ## Construct SummarizedExperiment
+#' peaks <- SimpleList(t(PTnofill), t(PTfill))
+#' sampleData <- meta
+#' featureData <- peakInfo(PT = PTnofill, sep = "@", start = 3)
+#' rownames(featureData) <- rownames(peaks[[1]])
+#' se <- SummarizedExperiment(assays = peaks, colData = sampleData, 
+#'                            rowData = featureData)
+#' names(assays(se)) <- c("nofill", "fill")
+#' 
+#' ## Correct drift for single batch
+#' se <- se[, colData(se)$batch == "F"]
+#' se <- correctDrift(se, 
+#'   injections = "inj", sampleGroups = "grp", RefID = "Ref", 
+#'   G = seq(5, 35, by = 3), modelNames = c("VVE", "VEE"),
+#'   reportPath = "drift_report/", assay.type = "fill", name = "corrected")
+#'
 #' \dontshow{
 #' setwd(.old_wd)
 #' }
-correctDrift <- function(peakTable,
+#' @name correctDrift
+
+.correctDrift <- function(peakTable,
                             injections,
                             sampleGroups,
                             QCID = "QC",
@@ -168,3 +192,37 @@ correctDrift <- function(peakTable,
     }
     return(Corr)
 }
+
+setGeneric("correctDrift", signature = c("peakTable"),
+  function(peakTable, ...) standardGeneric("correctDrift"))
+
+#' @export
+#' @rdname correctDrift
+setMethod("correctDrift", signature = c("ANY"), .correctDrift)
+
+#' @export
+#' @rdname correctDrift
+setMethod("correctDrift", signature = c("SummarizedExperiment"),
+          function(peakTable, injections, sampleGroups, assay.type, name, ...) {
+    from_to <- .get_from_to_names(peakTable, assay.type, name)
+  
+    .check_sample_col_present(peakTable, list(injections, sampleGroups))
+  
+    # Get corrected peak table and processing metadata
+    corrected <- correctDrift(t(assay(peakTable, from_to[[1]])), 
+        injections = colData(peakTable)[[injections]],
+        sampleGroups = colData(peakTable)[[sampleGroups]], 
+        ...)
+    corrected_mat <- t(corrected$TestFeatsFinal)
+    # Filter peak table by features in corrected peak table, where features
+    # with CV < CVlimit are retained
+    peakTable <- peakTable[which(rownames(peakTable) %in% 
+                         rownames(corrected_mat)), ]
+                         
+    # Include corrected peak table in object
+    assay(peakTable, from_to[[2]]) <- corrected_mat
+      
+    peakTable
+})
+
+

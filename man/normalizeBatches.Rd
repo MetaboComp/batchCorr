@@ -2,11 +2,12 @@
 % Please edit documentation in R/normalizeBatches.R
 \name{normalizeBatches}
 \alias{normalizeBatches}
+\alias{normalizeBatches,ANY-method}
+\alias{normalizeBatches,SummarizedExperiment-method}
 \title{Between-batch normalisation}
 \usage{
-normalizeBatches(
+\S4method{normalizeBatches}{ANY}(
   peakTableCorr,
-  peakTableOrg,
   batches,
   sampleGroup,
   refGroup = "QC",
@@ -15,43 +16,84 @@ normalizeBatches(
   FCLimit = 5,
   medianZero = c("mean", "min")
 )
+
+\S4method{normalizeBatches}{SummarizedExperiment}(peakTableCorr, batches, sampleGroup, assay.type, name, ...)
 }
 \arguments{
-\item{peakTableCorr}{Multi-batch drift-corrected peak table (samples in rows; features in columns)}
+\item{peakTableCorr}{SummarizedExperiment object or matrix}
 
-\item{peakTableOrg}{Multi-batch original peak table (samples in rows; features in columns)}
+\item{batches}{character scalar or factor, batch labels}
 
-\item{batches}{Vector (length=nrow(PeakTab)) of batch identifiers}
+\item{sampleGroup}{character scalar or character, group labels}
 
-\item{sampleGroup}{Vector (length=nrow(PeakTab)) of sample type (e.g. "sample", "QC", "Ref)}
+\item{refGroup}{character scalar, identifier of reference samples
+(default = "QC")}
 
-\item{refGroup}{Identifier of reference samples in sampleGroups (defaults to "QC")}
+\item{population}{character scalar, identifier of population samples in 
+sampleGroups (default: "all")}
 
-\item{population}{Identifier of population samples in sampleGroups (all (default) or any type of samples present in sampleGroups)}
+\item{CVlimit}{numeric scalar, coefficient of variance threshold for 
+filtering each batch by reference samples (default: 0.3)}
 
-\item{CVlimit}{CV criterion to pass for Ref samples per batch (defaults to 0.3)}
+\item{FCLimit}{numeric scalar, fold-change between average intensity in 
+batches threshold (default: 5)}
 
-\item{FCLimit}{Fold-change criterion for intensity (in relation to average intensity FC between batches; defaults to 5)}
+\item{medianZero}{character scalar, strategy for substituting median value 
+for population normalization when median is zero (-> Inf). Either 'mean' or 
+'min' (default: "min, i.e. lowest non-zero value)}
 
-\item{medianZero}{Strategy for substituting median value for population normalization when median is zero (-> Inf). Either 'mean' or 'min' (i.e. lowest non-zero value; default)}
+\item{assay.type}{character scalar, assay to be used in case of multiple
+assays}
+
+\item{name}{character scalar, name of the resultant assay in case of 
+multiple assays}
+
+\item{...}{optional arguments (not used)}
 }
 \value{
 An list object containing:
-
-peakTable: Normalised multi-batch peak table
-
-refCorrected: Boolean matrix with info on which batches were normalised by reference samples; others were normalized by population medians
+A SummarizedExperiment object with the normalized peak table or a list, 
+including the normalized matrix and processing information:
+\itemize{
+  \item peakTable: normalised peak table
+  \item refCorrected: boolean matrix with information on which batches were 
+    normalised by reference samples; else normalised by population median 
+}
 }
 \description{
-Batches are feature-wise normalised by Ref samples if passing heuristic criteria (CV and fold change).
-Otherwise normalized by population median (still per feature).
+Batches are feature-wise normalised by Ref samples if passing heuristic 
+criteria (CV and fold change). Otherwise normalized by population median.
+}
+\details{
+A basic method for matrices and SummarizedExperiment is supported. For 
+grouping variables such as sampleGroup, the basic method expects vectors, 
+while the SummarizedExperiment method expects the names of the respective 
+columns. The basic method returns a list with the normalized peak table and 
+information about the process, whereas the SummarizedExperiment method 
+assigns the normalized peak table to the object supplied.
 }
 \examples{
-# Note that the example data does not include any biological samples, in
-# which case population = "sample" does not work
+# Note that the example data does not include any biological samples
 data("ThreeBatchData")
-normData <- normalizeBatches(peakTableCorr = PTfill, batches = meta$batch,
-                             sampleGroup = meta$grp, refGroup = "Ref",
-                             population = "all")
+normData <- normalizeBatches(
+    peakTableCorr = PTfill, batches = meta$batch,
+    sampleGroup = meta$grp, refGroup = "Ref",
+    population = "all"
+)
+
+# With SummarizedExperiment
+peaks <- SimpleList(t(PTnofill), t(PTfill))
+sampleData <- meta
+featureData <- peakInfo(PT = PTnofill, sep = "@", start = 3)
+rownames(featureData) <- rownames(peaks[[1]])
+se <- SummarizedExperiment(assays = peaks, colData = sampleData, 
+                           rowData = featureData)
+names(assays(se)) <- c("nofill", "fill")
+
+se <- normalizeBatches(
+    peakTableCorr = se, batches = "batch", sampleGroup = "grp", 
+    refGroup = "Ref", population = "all", assay.type = "fill",
+    name = "normalized"
+)
 
 }

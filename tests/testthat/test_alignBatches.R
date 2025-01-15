@@ -114,3 +114,38 @@ test_that("Output of batchAlign is correct", {
     # Check index of first feature feature not kept after alignment
     expect_equal(which(bAlign$boolKeep == FALSE)[1], 4)
 })
+
+test_that("Assay control works (with alignBatches)", {
+    # Assay not found
+    expect_error(alignBatches(PeakTabNoFill = se, PeakTabFilled = se,
+                     batches = "batch", sampleGroups = "grp", report = FALSE,
+                     assay.type1 = "nope", assay.type2 = "fill", 
+                     name = "aligned", rt_col = "rt", mz_col = "mz"))
+    
+    # Resultant assay must not be same as assay.type
+    expect_error(alignBatches(PeakTabNoFill = se, PeakTabFilled = se,
+                     batches = "batch", sampleGroups = "grp", report = FALSE,
+                     assay.type1 = "nofill", assay.type2 = "fill", 
+                     name = "fill", rt_col = "rt", mz_col = "mz"))
+             
+    # colData column not found
+    expect_error(alignBatches(PeakTabNoFill = se, PeakTabFilled = se,
+                     batches = "nope", sampleGroups = "grp", report = FALSE,
+                     assay.type1 = "nofill", assay.type2 = "fill", 
+                     name = "aligned", rt_col = "rt", mz_col = "mz"))
+                 
+    # rowData column not found
+    expect_error(alignBatches(PeakTabNoFill = se, PeakTabFilled = se,
+                     batches = "batch", sampleGroups = "grp", report = FALSE,
+                     assay.type1 = "nofill", assay.type2 = "fill", 
+                     name = "aligned", rt_col = "nope", mz_col = "mz"))
+                     
+    # Works with a single-assay objects without specifying assay.type nor name
+    nofill <- se
+    assays(nofill)[names(assays(nofill)) != "nofill"] <- NULL
+    fill <- se
+    assays(fill)[names(assays(fill)) != "fill"] <- NULL
+    expect_no_error(alignBatches(PeakTabNoFill = nofill, PeakTabFilled = fill,
+                        batches = "batch", sampleGroups = "grp", report = FALSE,
+                        rt_col = "rt", mz_col = "mz"))
+})

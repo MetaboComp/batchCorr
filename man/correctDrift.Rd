@@ -2,9 +2,12 @@
 % Please edit documentation in R/correctDrift.R
 \name{correctDrift}
 \alias{correctDrift}
+\alias{.correctDrift}
+\alias{correctDrift,ANY-method}
+\alias{correctDrift,SummarizedExperiment-method}
 \title{Within-batch signal intensity drift correction}
 \usage{
-correctDrift(
+.correctDrift(
   peakTable,
   injections,
   sampleGroups,
@@ -18,67 +21,123 @@ correctDrift(
   report = TRUE,
   reportPath = NULL
 )
+
+\S4method{correctDrift}{ANY}(
+  peakTable,
+  injections,
+  sampleGroups,
+  QCID = "QC",
+  RefID = "none",
+  modelNames = c("VVV", "VVE", "VEV", "VEE", "VEI", "VVI", "VII"),
+  G = seq(5, 35, by = 10),
+  smoothFunc = "spline",
+  spar = 0.2,
+  CVlimit = 0.3,
+  report = TRUE,
+  reportPath = NULL
+)
+
+\S4method{correctDrift}{SummarizedExperiment}(peakTable, injections, sampleGroups, assay.type, name, ...)
 }
 \arguments{
-\item{peakTable}{Batch peak table}
+\item{peakTable}{SummarizedExperiment object or matrix}
 
-\item{injections}{Injection number in sequence}
+\item{injections}{character scalar or numeric, injection order}
 
-\item{sampleGroups}{Vector (length=nrow(PeakTab)) of sample type (e.g. "sample", "QC", "Ref)}
+\item{sampleGroups}{character scalar or character, group labels}
 
-\item{QCID}{QC identifier in sampleGroups (defaults to "QC")}
+\item{QCID}{character scalar, identifier of QC samples}
 
-\item{RefID}{Optional identifier in sampleGroups of external reference samples for unbiased assessment of drift correction (see batchCorr tutorial at Gitlab page)}
+\item{RefID}{character scalar, identifier of external reference 
+samples for unbiased assessment of drift correction}
 
-\item{modelNames}{Which MClust geometries to test (see mclust documentation)}
+\item{modelNames}{character, Which mclust geometries to test}
 
-\item{G}{Which numbers of clusters to test (see mclust documentation)}
+\item{G}{integer, numbers of clusters to test}
 
-\item{smoothFunc}{choice of regression function: spline or loess (defaults to spline)}
+\item{smoothFunc}{character scalar, choice of regression function: 
+spline or loess (default: spline)}
 
-\item{spar}{smoothing parameter for spline or loess (defaults to 0.2)}
+\item{spar}{numeric, smoothing parameter value (defaults to 0.2)}
 
-\item{CVlimit}{QC feature CV limit as final feature inclusion criterion}
+\item{CVlimit}{coefficient of variance threshold for filtering 
+(default = 0.3)}
 
-\item{report}{Boolean whether to print pdf reports of drift models}
+\item{report}{boolean, whether to print pdf reports of drift models}
 
-\item{reportPath}{directory path for report}
+\item{reportPath}{character scalar, directory path for report}
+
+\item{assay.type}{character scalar, assay of to be used in case of multiple 
+assays}
+
+\item{name}{character scalar, name of the resultant assay in case of multiple
+assays}
+
+\item{...}{optional arguments (not used)}
 }
 \value{
-A driftCorrection object
-
-$actionInfo (to see what happened to each cluster)
-
-$testFeatsCorr (to extract drift-corrected data) and
-
-$testFeatsFinal (to extract drift-corrected data which pass the criterion that QC CV < CVlimit.
+A SummarizedExperiment object with the corrected matrix or a list, 
+including the corrected matrix and processing information:
+\itemize{
+  \item actionInfo: see what happened to each cluster
+  \item testFeatsCorr: to extract drift-corrected data
+  \item testFeatsFinal: to extract drift-corrected data which pass the 
+    criterion QC CV < CVlimit
+}
 }
 \description{
-Within-batch signal intensity drift correction
+Correct drift with cluster-based drift correction.
+}
+\details{
+A basic method for matrix and SummarizedExperiment is supported. For 
+grouping variables such as sampleGroups, the basic method expects vectors, 
+while the SummarizedExperiment method expects the names of the respective 
+columns. The basic method returns a list with the corrected peak table and 
+information about the process, whereas the SummarizedExperiment method 
+assigns the corrected peak table to the object supplied.
 }
 \examples{
-\dontshow{.old_wd <- setwd(tempdir())}
-data('ThreeBatchData') 
+\dontshow{
+.old_wd <- setwd(tempdir())
+}
+data("ThreeBatchData")
 set.seed(2024)
 # Get batches
-batchB <- getBatch(peakTable = PTfill, meta = meta, 
-                   batch = meta$batch, select = 'B')
-batchF <- getBatch(peakTable = PTfill, meta = meta, 
-                   batch = meta$batch, select = 'F')
+batchB <- getBatch(
+    peakTable = PTfill, meta = meta,
+    batch = meta$batch, select = "B"
+)
+batchF <- getBatch(
+    peakTable = PTfill, meta = meta,
+    batch = meta$batch, select = "F"
+)
 # Drift correction using QCs
-BCorr <- correctDrift(peakTable = batchB$peakTable, 
-                      injections = batchB$meta$inj, 
-                      sampleGroups = batchB$meta$grp, QCID = 'QC', 
-                      G = seq(5,35,by=3), modelNames = c('VVE', 'VEE'),
-                      reportPath = "drift_report/")
-# More unbiased drift correction using QCs & external reference samples
-FCorr <- correctDrift(peakTable = batchF$peakTable, 
-                      injections = batchF$meta$inj,
-                      sampleGroups = batchF$meta$grp, QCID = 'QC',
-                      RefID='Ref', G = seq(5,35,by=3), 
-                      modelNames = c('VVE', 'VEE'), 
-                      reportPath = "drift_report/")
-# Merge batches for batch normalization, for example
-mergedData <- mergeBatches(list(BCorr, FCorr))
-\dontshow{setwd(.old_wd)}
+BCorr <- correctDrift(
+    peakTable = batchB$peakTable,
+    injections = batchB$meta$inj,
+    sampleGroups = batchB$meta$grp, QCID = "QC",
+    G = seq(5, 35, by = 3), modelNames = c("VVE", "VEE"),
+    reportPath = "drift_report/"
+)
+# Using SummarizedExperiment, more unbiased drift correction using QCs &
+# external reference samples
+## Construct SummarizedExperiment
+peaks <- SimpleList(t(PTnofill), t(PTfill))
+sampleData <- meta
+featureData <- peakInfo(PT = PTnofill, sep = "@", start = 3)
+rownames(featureData) <- rownames(peaks[[1]])
+se <- SummarizedExperiment(assays = peaks, colData = sampleData, 
+                           rowData = featureData)
+names(assays(se)) <- c("nofill", "fill")
+
+## Correct drift for single batch
+se <- se[, colData(se)$batch == "F"]
+se <- correctDrift(se, 
+  injections = "inj", sampleGroups = "grp", RefID = "Ref", 
+  G = seq(5, 35, by = 3), modelNames = c("VVE", "VEE"),
+  reportPath = "drift_report/", assay.type = "fill", name = "corrected")
+
+\dontshow{
+setwd(.old_wd)
+}
 }

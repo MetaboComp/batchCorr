@@ -18,14 +18,14 @@ A list with three objects encompassing three batches, 48 QC samples,
 }
 }
 \description{
-The untargeted LC-MS metabolomics data was collected as per the associated 
+The untargeted LC-MS metabolomics data was collected as per the associated
 publication. In brief, the data was preprocessed using the \pkg{xcms}
 package and biological samples were removed.
 }
 \references{
-Carl Brunius, Lin Shi, Rikard Landberg 
-Large-scale untargeted LC-MS metabolomics data correction using 
-between-batch feature alignment and cluster-based within-batch signal 
+Carl Brunius, Lin Shi, Rikard Landberg
+Large-scale untargeted LC-MS metabolomics data correction using
+between-batch feature alignment and cluster-based within-batch signal
 intensity drift correction.
 Metabolomics, 12:173. \url{https://doi.org/10.3390/metabo10040135}
 }

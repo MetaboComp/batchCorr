@@ -76,3 +76,12 @@ bFlag <- batchFlag(
 aIQ <- alignIndex(batchflag = bFlag, grpType = "QC", mzdiff = 0.002, rtdiff = 15, report = FALSE)
 
 bAlign <- batchAlign(batchflag = bFlag, alignindex = aIQ, peaktable_filled = PTfill, batch = meta$batch)
+
+############# SummarizedExperiment object ##############
+peaks <- SimpleList(t(PTnofill), t(PTfill))
+sampleData <- meta
+featureData <- peakInfo(PT = PTnofill, sep = "@", start = 3)
+rownames(featureData) <- rownames(peaks[[1]])
+se <- SummarizedExperiment(assays = peaks, colData = sampleData, 
+                           rowData = featureData)
+names(assays(se)) <- c("nofill", "fill")

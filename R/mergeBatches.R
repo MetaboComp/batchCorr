@@ -9,7 +9,9 @@
 #'  present, but the features are present in high quality in sufficient 
 #'  proportion of batches to anyway warrant inclusion.
 #' @param batchList A list of correction objects (after drift correction)
-#' @param qualRatio Proportion of
+#' @param qualRatio numeric scalar, features with QC CV < the
+# limit (supplied to CorrectDrift) in a specified proportion of batches
+# (default = 0.5)
 #'
 #' @return A list object containing
 #' @return `peakTableOrg` A merged peak table of original data
@@ -37,6 +39,7 @@ mergeBatches <- function(batchList, qualRatio = 0.5) {
     qualFeatures <- list()
     peakTablesOrg <- peakTablesCorr <- list()
     # Extract relevant data from corr objects
+    # Quality features are taken from the corrected object, used to filter
     for (batch in seq_len(nBatch)) {
         nSamp[batch] <- length(batchList[[batch]]$TestInjs)
         injections[[batch]] <- batchList[[batch]]$TestInjs

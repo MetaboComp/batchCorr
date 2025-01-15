@@ -520,7 +520,7 @@ plotAlign <- function(batchflag,
 #' @return boolAveragedFill: boolean vector of features where alignment has been
 #'  made using feature averaging 
 #'  (i.e. where batches are missing within features). 
-#'  Length: same as orgiginal number of features
+#'  Length: same as original number of features
 #' @return aI: alignIndex object (indata)
 #' @importFrom stats aggregate
 #' @noRd

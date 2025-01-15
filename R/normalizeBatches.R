@@ -1,60 +1,84 @@
 #' Between-batch normalisation
 #'
 #' Batches are feature-wise normalised by Ref samples if passing heuristic 
-#' criteria (CV and fold change).
-#' Otherwise normalized by population median (still per feature).
+#' criteria (CV and fold change). Otherwise normalized by population median.
 #'
-#' @param peakTableCorr Multi-batch drift-corrected peak table 
-#' (samples in rows; features in columns)
-#' @param peakTableOrg Multi-batch original peak table 
-#' (samples in rows; features in columns)
-#' @param batches Vector (length=nrow(PeakTab)) of batch identifiers
-#' @param sampleGroup Vector (length=nrow(PeakTab)) of sample type 
-#' (e.g. "sample", "QC", "Ref)
-#' @param refGroup Identifier of reference samples in sampleGroups 
-#' (defaults to "QC")
-#' @param population Identifier of population samples in sampleGroups 
-#' (all (default) or any type of samples present in sampleGroups)
-#' @param CVlimit  CV criterion to pass for Ref samples per batch 
-#' (defaults to 0.3)
-#' @param FCLimit Fold-change criterion for intensity 
-#' (in relation to average intensity FC between batches; defaults to 5)
-#' @param medianZero Strategy for substituting median value for population 
-#' normalization when median is zero (-> Inf). Either 'mean' or 'min' 
-#' (i.e. lowest non-zero value; default)
+#' A basic method for matrix and SummarizedExperiment is supported. For 
+#' grouping variables such as sampleGroup, the basic method expects vectors, 
+#' while the SummarizedExperiment method expects the names of the respective 
+#' columns. The basic method returns a list with the normalized peak table and 
+#' information about the process, whereas the SummarizedExperiment method 
+#' assigns the normalized peak table to the object supplied. 
+#' 
+#' @param peakTableCorr SummarizedExperiment object or matrix
+#' @param batches character scalar or factor, batch labels
+#' @param sampleGroup character scalar or character, group labels
+#' @param refGroup character scalar, identifier of reference samples
+#' (default = "QC")
+#' @param population character scalar, identifier of population samples in 
+#' sampleGroups (default: "all")
+#' @param CVlimit  numeric scalar, coefficient of variance threshold for 
+#' filtering each batch by reference samples (default: 0.3)
+#' @param FCLimit numeric scalar, fold-change between average intensity in 
+#' batches threshold (default: 5)
+#' @param medianZero character scalar, strategy for substituting median value 
+#' for population normalization when median is zero (-> Inf). Either 'mean' or 
+#' 'min' (default: "min, i.e. lowest non-zero value)
+#' @param assay.type character scalar, assay to be used in case of multiple
+#' assays
+#' @param name character scalar, name of the resultant assay in case of 
+#' multiple assays
+#' @param ... optional arguments (not used)
 #'
 #' @return An list object containing:
-#' @return peakTable: Normalised multi-batch peak table
-#' @return refCorrected: Boolean matrix with info on which batches were 
-#' normalised by reference samples; others were normalized by population medians
+#' A SummarizedExperiment object with the normalized peak table or a list, 
+#' including the normalized matrix and processing information:
+#' \itemize{
+#'   \item peakTable: normalised peak table
+#'   \item refCorrected: boolean matrix with information on which batches were 
+#'     normalised by reference samples; else normalised by population median 
+#' } 
 #'
 #' @examples
-#' # Note that the example data does not include any biological samples, in
-#' # which case population = "sample" does not work
+#' # Note that the example data does not include any biological samples
 #' data("ThreeBatchData")
 #' normData <- normalizeBatches(
 #'     peakTableCorr = PTfill, batches = meta$batch,
 #'     sampleGroup = meta$grp, refGroup = "Ref",
 #'     population = "all"
 #' )
+#' 
+#' # With SummarizedExperiment
+#' peaks <- SimpleList(t(PTnofill), t(PTfill))
+#' sampleData <- meta
+#' featureData <- peakInfo(PT = PTnofill, sep = "@", start = 3)
+#' rownames(featureData) <- rownames(peaks[[1]])
+#' se <- SummarizedExperiment(assays = peaks, colData = sampleData, 
+#'                            rowData = featureData)
+#' names(assays(se)) <- c("nofill", "fill")
+#'
+#' se <- normalizeBatches(
+#'     peakTableCorr = se, batches = "batch", sampleGroup = "grp", 
+#'     refGroup = "Ref", population = "all", assay.type = "fill",
+#'     name = "normalized"
+#' )
 #'
 #' @importFrom stats median
 #'
-#' @export
-normalizeBatches <- function(peakTableCorr,
-                                peakTableOrg,
-                                batches,
-                                sampleGroup,
-                                refGroup = "QC",
-                                population = "all",
-                                CVlimit = 0.3,
-                                FCLimit = 5,
-                                medianZero = c("mean", "min")) {
+#' @name normalizeBatches
+NULL
+
+.normalizeBatches <- function(peakTableCorr,
+                              batches,
+                              sampleGroup,
+                              refGroup = "QC",
+                              population = "all",
+                              CVlimit = 0.3,
+                              FCLimit = 5,
+                              medianZero = c("mean", "min")) {
     # Basic sanity checks and setting defaults
     # Setting defaults
-    if (missing(peakTableOrg)) {
-        peakTableOrg <- peakTableCorr
-    }
+    peakTableOrg <- peakTableCorr
     if (missing(medianZero)) {
         medianZero <- "min"
     }
@@ -137,7 +161,7 @@ normalizeBatches <- function(peakTableCorr,
         for (bb in (b + 1):nBatch) {
             MeanIntensityRatios[bb, b] <- 
                 mean(RefMeanIntensity[bb, ]) / mean(RefMeanIntensity[b, ])
-            
+
             MeanIntensityRatios[b, bb] <- 1 / MeanIntensityRatios[bb, b]
         }
     }
@@ -160,7 +184,7 @@ normalizeBatches <- function(peakTableCorr,
         # Criterion for intensity ratio
         candidates <- abs(log(featureIntensityRatios / MeanIntensityRatios)) <= 
             log(FCLimit)
-        
+
         # Convert missing values -> FALSE (i.e. not a candidate)
         candidates[is.na(candidates)] <- FALSE
         # Criterion for CV < limit
@@ -172,7 +196,7 @@ normalizeBatches <- function(peakTableCorr,
 
         # Perform default normalization by reference samples 
         # within the selected sample populations
-        
+
         # Find reference batch
         refBatch <- min(which(colSums(candidates) == max(colSums(candidates))))
         # Extract flags for reference sample correction
@@ -252,3 +276,33 @@ normalizeBatches <- function(peakTableCorr,
         refCorrected = RefNormMatrix
     ))
 }
+
+setGeneric("normalizeBatches", signature = c("peakTableCorr"),
+           function(peakTableCorr, ...) {
+    standardGeneric("normalizeBatches")
+})
+
+#' @export
+#' @rdname normalizeBatches
+setMethod("normalizeBatches", signature = c("ANY"), .normalizeBatches)
+
+#' @export
+#' @rdname normalizeBatches
+setMethod("normalizeBatches", signature = c("SummarizedExperiment"),
+          function(peakTableCorr, batches, sampleGroup,
+                   assay.type, name, ...) {
+    from_toCorr <- .get_from_to_names(peakTableCorr, assay.type, name)
+    
+    .check_sample_col_present(peakTableCorr, list(batches, sampleGroup))
+    
+    normalized <- normalizeBatches(
+        t(assay(peakTableCorr, from_toCorr[[1]])),
+        batches = colData(peakTableCorr)[[batches]],
+        sampleGroup = colData(peakTableCorr)[[sampleGroup]],
+        ...)
+      
+    assay(peakTableCorr, from_toCorr[[2]]) <- t(normalized$peakTable)
+    
+    peakTableCorr
+})
+

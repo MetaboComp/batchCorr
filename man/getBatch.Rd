@@ -9,9 +9,11 @@ getBatch(peakTable, meta, batch, select)
 \arguments{
 \item{peakTable}{Multi-batch peak table}
 
-\item{meta}{Multi-batch metadata (including e.g. batch, injection sequence, sample tye, sample name, ...)}
+\item{meta}{Multi-batch metadata (including e.g. batch, injection sequence, 
+sample tye, sample name, ...)}
 
-\item{batch}{vector (length = nSamples) containing batch information (e.g. A, B, C)}
+\item{batch}{vector (length = nSamples) containing batch information 
+(e.g. A, B, C)}
 
 \item{select}{which batch to extract}
 }
@@ -26,11 +28,15 @@ $meta: Single batch metadata
 Extract specific batch from peaktable and metadata
 }
 \examples{
-data('ThreeBatchData') 
+data("ThreeBatchData")
 # Get batches for drift correction
-batchB <- getBatch(peakTable = PTfill, meta = meta, 
-                   batch = meta$batch, select = 'B')
-batchF <- getBatch(peakTable = PTfill, meta = meta, 
-                   batch = meta$batch, select = 'F')
+batchB <- getBatch(
+    peakTable = PTfill, meta = meta,
+    batch = meta$batch, select = "B"
+)
+batchF <- getBatch(
+    peakTable = PTfill, meta = meta,
+    batch = meta$batch, select = "F"
+)
 
 }

@@ -66,14 +66,19 @@ data("ThreeBatchData")
 
 # How it works
 
-```batchCorr``` is designed to work with basic data classes. Adundances are 
-included in a matrix, while sample and feature metadata is included in a 
-data.frame. ```batchCorr``` works best as per the chronology presented below. 
-Other functions include:
+`batchCorr` was originally designed to work with basic data structures but the 
+three main methods, `alignBatches`, `correctDrift` and 
+`normalizeBatches` also support SummarizedExperiment. Abundances are included 
+in a matrix, while sample and feature data is included in a data.frame. 
+`batchCorr` works best as per the chronology presented below, where both the 
+original functionality and SummarizedExperiment-functionality is demonstrated.
 
-- ```peakInfo``` to extract m/z and rt from peak table
-- ```getBatch``` to extract specific batch from peak table and metadata
-- ```mergeBatches``` to merge batches after drift correction
+Utility functions for the original functionality include:
+- `peakInfo` to extract m/z and rt from peak table based on a separator in 
+rownames
+- `getBatch` to extract specific batch from a list with a peak table and 
+metadata
+- `mergeBatches` to merge batches after drift correction
 
 Important analytical background includes batch-specific QC samples and long-term
 reference QC samples, which are regularly interspersed in the injection 
@@ -84,15 +89,28 @@ QC samples, and are therefore not directly representative of the sample
 population. Long-term reference QC samples are used for between-batch alignment,
 within-batch drift correction and between-batch normalization.
 
+Let's create a SummarizedExperiment object for demonstration purposes:
+
+```{r}
+peaks <- SimpleList(t(PTnofill), t(PTfill))
+sampleData <- meta
+featureData <- peakInfo(PT = PTnofill, sep = "@", start = 3)
+rownames(featureData) <- rownames(peaks[[1]])
+
+se <- SummarizedExperiment(assays = peaks, colData = sampleData,
+    rowData = featureData)
+names(assays(se)) <- c("nofill", "fill")
+```
+
 ## Between-batch alignment
 
 Shifts in retention time (RT) and mass-to-charge ratio (m/z) across batches 
 results in some metabolites being redundantly represented in the dataset. 
 To rectify this, between-batch alignment of features is performed using 
-```alignBatches```, which encompasses the following steps:
+`alignBatches`, which encompasses the following steps:
 
 1. Aggregation of feature presence/missingness on batch level
-- batch-wise flagging of low-quality features with proportion of ```NA```s to 
+- batch-wise flagging of low-quality features with proportion of `NA`s to 
 all samples > 80% based on long-term reference QC samples
 - 0 < total batch presence of candidates features < number of batches to be an 
 alignment candidate
@@ -125,12 +143,23 @@ alignBat <- alignBatches(
 # Extract new peak table
 PT <- alignBat$PTalign
 ```
+Below, we use SummarizedExperiment with multiple peak tables. When using 
+SummarizedExperiment sequentially such that a single peak table is replaced by 
+a new one, one doesn't need to specify the `assay.type` or `name` parameters. 
+The assay is added to the SummarizedExperiment supplied to `PeakTabFilled`.
+
+```{r}
+se <- alignBatches(PeakTabNoFill = se, PeakTabFilled = se, batches = "batch",
+                   sampleGroups = "grp", report = FALSE,
+                   assay.type1 = "nofill", assay.type2 = "fill", 
+                   name = "aligned", rt_col = "rt", mz_col = "mz")
+```
 
 ## Within-batch drift correction
 Drift in abundance within a batch gives rise to unwanted variation which can be
 modelled in terms of injection order. Many methods fail to take into account 
 different drift patterns in features or are prone to overfitting. Herein, 
-within-batch drift correction is performed using the wrapper ```correctDrift```,
+within-batch drift correction is performed using the wrapper `correctDrift`,
 which involves:
 
 1. Clustering of features
@@ -138,12 +167,10 @@ which involves:
 - clustering serves to identify features with similar drift patterns, which are 
 corrected in aggregate. As such, different drift patterns are accounted for 
 while mitigating overfitting to unwanted variation in a single feature. 
-- different cluster model types (```groupNames```) and numbers of clusters 
-(```G```) can be tested 
+- different cluster model types (`groupNames`) and numbers of clusters 
+(`G`) can be tested 
 
-2. Calculation of correction factor
-- ```driftCalc```accepts arguments specifying the smoothing function 
-(LOESS or cubic spline)
+2. Fitting a cubic spline and calculation of correction factor
 
 3. Correction of the abundances using correction factor
 - corrects to reference level at the first injection after scaling
@@ -199,9 +226,25 @@ HCorr <- correctDrift(
 )
 ```
 
+Similarly, we subset the SummarizedExperiment by batch and perform drift 
+correction, but this time with long-term reference samples for quality 
+indicators.
+
+```{r}
+batch_labels <- unique(colData(se)$batch)
+batches <- lapply(batch_labels, function(batch_label) {
+  se[, colData(se)$batch == batch_label]
+})
+
+batches <- lapply(batches, correctDrift, injections = "inj", 
+    sampleGroups = "grp", RefID = "Ref", G = seq(5, 35, by = 3), 
+    modelNames = c("VVE", "VEE"), reportPath = "drift_report/", 
+    assay.type = "aligned", name = "corrected")
+```
+
 ## Between-batch normalization
 
-```normalizeBatches``` performs between-batch normalisation either based on 
+`normalizeBatches` performs between-batch normalisation either based on 
 long-term reference QC samples or median batch intensity depending on the 
 following dual criterion:
 
@@ -213,13 +256,10 @@ between batches
 If the long-term QC samples are not considered reliable according to the above 
 dual criterion for a specific feature, batches were normalised by sample 
 population median, where a sample population can be specified explicitly to 
-the ```population``` argument. Features not present in all batches are also 
+the `population` argument. Features not present in all batches are also 
 excluded from the dataset.
 
 ```{r, warning = FALSE}
-# Merging includes a quality control step, where features with QC CV < the
-# limit (supplied to CorrectDrift) in a specified proportion of batches
-# (default = 0.5) are excluded
 mergedData <- mergeBatches(list(BCorr, FCorr, HCorr))
 normData <- normalizeBatches(
     peakTableCorr = mergedData$peakTableCorr,
@@ -229,10 +269,26 @@ normData <- normalizeBatches(
 PTnorm <- normData$peakTable
 ```
 
+Merging with `mergeBatches`, as above, includes a quality control step, where 
+features with CV < the limit (supplied to correctDrift()) in a specified 
+proportion of batches (default = 0.5) are excluded. For SummarizedExperiment, 
+we join the batches, keeping features shared across all batches but without 
+filtering features by proportion of quality batches. 
+
+```{r, eval = FALSE}
+common_peaks <- Reduce(intersect, lapply(batches, rownames))
+batches <- lapply(batches, function(batch) batch[common_peaks, ])
+se <- do.call(cbind, batches)
+
+se <- normalizeBatches(peakTableCorr = se, 
+    batches = "batch", sampleGroup = "grp", refGroup = "Ref",
+    population = "all", assay.type = "corrected", name = "normalized")
+```
+
 # Authors & Acknowledgements
 
-The first version of ```batchCorr``` was written by Carl Brunius. 
-```batchCorr``` was developed for Bioconductor by Carl Brunius, 
+The first version of `batchCorr` was written by Carl Brunius. 
+`batchCorr` was developed for Bioconductor by Carl Brunius, 
 Anton Ribbenstedt and Vilhelm Suksi. If you find any bugs or other things to 
 fix, please submit an issue on GitLab! All contributions to the package are 
 always welcome!

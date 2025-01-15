@@ -9,7 +9,7 @@ mergeBatches(batchList, qualRatio = 0.5)
 \arguments{
 \item{batchList}{A list of correction objects (after drift correction)}
 
-\item{qualRatio}{Proportion of}
+\item{qualRatio}{numeric scalar, features with QC CV < the}
 }
 \value{
 A list object containing
@@ -24,33 +24,56 @@ A list object containing
 }
 \description{
 The output of the within-batch drift correction is a correction object.
-This function merges peak tables from several batches by extracting information from the correction objects.
-The user must specify a minimum proportion of qualified batches per feature, i.e. such batches where the QC CV is < the specified limit.
-There is thus a risk that features with poor quality (in certain batches) are present, but the features are present in high quality in sufficient proportion of batches to anyway warrant inclusion.
+This function merges peak tables from several batches by extracting 
+information from the correction objects.
+The user must specify a minimum proportion of qualified batches per feature, 
+i.e. such batches where the QC CV is < the specified limit.
+There is thus a risk that features with poor quality (in certain batches) are
+ present, but the features are present in high quality in sufficient 
+ proportion of batches to anyway warrant inclusion.
 }
 \examples{
-\dontshow{.old_wd <- setwd(tempdir())}
-data('ThreeBatchData') 
+\dontshow{
+.old_wd <- setwd(tempdir())
+}
+data("ThreeBatchData")
 set.seed(2024)
 # Get batches
-batchB <- getBatch(peakTable = PTfill, meta = meta, 
-                   batch = meta$batch, select = 'B')
-batchF <- getBatch(peakTable = PTfill, meta = meta, 
-                   batch = meta$batch, select = 'F')
+batchB <- getBatch(
+    peakTable = PTfill, meta = meta,
+    batch = meta$batch, select = "B"
+)
+batchF <- getBatch(
+    peakTable = PTfill, meta = meta,
+    batch = meta$batch, select = "F"
+)
 # Drift correction using QCs
-BCorr <- correctDrift(peakTable = batchB$peakTable, 
-                      injections = batchB$meta$inj, 
-                      sampleGroups = batchB$meta$grp, QCID = 'QC', 
-                      G = seq(5,35,by=3), modelNames = c('VVE', 'VEE'),
-                      reportPath = "drift_report/")
-# More unbiased drift correction using QCs & external reference samples
-FCorr <- correctDrift(peakTable = batchF$peakTable, 
-                      injections = batchF$meta$inj,
-                      sampleGroups = batchF$meta$grp, QCID = 'QC',
-                      RefID='Ref', G = seq(5,35,by=3), 
-                      modelNames = c('VVE', 'VEE'), 
-                      reportPath = "drift_report/")
-# Merge batches for batch normalization, for example
-mergedData <- mergeBatches(list(BCorr, FCorr))
-\dontshow{setwd(.old_wd)}
+BCorr <- correctDrift(
+    peakTable = batchB$peakTable,
+    injections = batchB$meta$inj,
+    sampleGroups = batchB$meta$grp, QCID = "QC",
+    G = seq(5, 35, by = 3), modelNames = c("VVE", "VEE"),
+    reportPath = "drift_report/"
+)
+# Using SummarizedExperiment, more unbiased drift correction using QCs &
+# external reference samples
+## Construct SummarizedExperiment
+peaks <- SimpleList(t(PTnofill), t(PTfill))
+sampleData <- meta
+featureData <- peakInfo(PT = PTnofill, sep = "@", start = 3)
+rownames(featureData) <- rownames(peaks[[1]])
+se <- SummarizedExperiment(assays = peaks, colData = sampleData, 
+                           rowData = featureData)
+names(assays(se)) <- c("nofill", "fill")
+
+## Correct drift for single batch
+se <- se[, colData(se)$batch == "F"]
+se <- correctDrift(se, 
+  injections = "inj", sampleGroups = "grp", RefID = "Ref", 
+  G = seq(5, 35, by = 3), modelNames = c("VVE", "VEE"),
+  reportPath = "drift_report/", assay.type = "fill", name = "corrected")
+
+\dontshow{
+setwd(.old_wd)
+}
 }

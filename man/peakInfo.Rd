@@ -11,9 +11,11 @@ peakInfo(PT, sep = "_", timepos = 2, start = 1)
 
 \item{sep}{character separating mz from rt, e.g. "_"}
 
-\item{timepos}{Which position carries info about rt (1 for before separator; 2 for after separator)}
+\item{timepos}{Which position carries info about rt 
+(1 for before separator; 2 for after separator)}
 
-\item{start}{character from which to start the read of peakInfo (from PT colnames)}
+\item{start}{character from which to start the read of 
+peakInfo (from PT colnames)}
 }
 \value{
 a matrix with m/z and rt of features as columns
@@ -22,9 +24,9 @@ a matrix with m/z and rt of features as columns
 Extract features from peak table and report their m/z and rt values
 }
 \examples{
-data('ThreeBatchData')
+data("ThreeBatchData")
 # Extract peakinfo (i.e. m/z and rt of features). These column names have 2
 # leading characters describing LC-MS mode -> start at 3
-peakIn <- peakInfo(PT = PTnofill, sep = '@', start = 3)
+peakIn <- peakInfo(PT = PTnofill, sep = "@", start = 3)
 
 }

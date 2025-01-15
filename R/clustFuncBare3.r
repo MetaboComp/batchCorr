@@ -638,7 +638,7 @@ cleanVar <- function(QCCorr,
     )
     message("\nPeak table in $TestFeatsFinal, final variables in $finalVars
             and cluster info in $actionInfo.")
-    return(QCFinal)
+    QCFinal
 }
 
 
