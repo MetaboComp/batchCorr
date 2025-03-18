@@ -41,9 +41,6 @@
 #' }
 #'
 #' @examples
-#' \dontshow{
-#' .old_wd <- setwd(tempdir())
-#' }
 #' data("ThreeBatchData")
 #' set.seed(2024)
 #' # Get batches
@@ -61,7 +58,7 @@
 #'     injections = batchB$meta$inj,
 #'     sampleGroups = batchB$meta$grp, QCID = "QC",
 #'     G = seq(5, 35, by = 3), modelNames = c("VVE", "VEE"),
-#'     reportPath = "drift_report/"
+#'     report = FALSE
 #' )
 #' # Using SummarizedExperiment, more unbiased drift correction using QCs &
 #' # external reference samples
@@ -79,11 +76,8 @@
 #' se <- correctDrift(se, 
 #'   injections = "inj", sampleGroups = "grp", RefID = "Ref", 
 #'   G = seq(5, 35, by = 3), modelNames = c("VVE", "VEE"),
-#'   reportPath = "drift_report/", assay.type = "fill", name = "corrected")
+#'   report = FALSE, assay.type = "fill", name = "corrected")
 #'
-#' \dontshow{
-#' setwd(.old_wd)
-#' }
 #' @name correctDrift
 NULL
 

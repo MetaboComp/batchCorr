@@ -103,9 +103,6 @@ SummarizedExperiment method assigns the aligned peak table to the object
 supplied to PeakTabFilled.
 }
 \examples{
-\dontshow{
-.old_wd <- setwd(tempdir())
-}
 data("ThreeBatchData")
 # Basic method
 ## Extract peakinfo (i.e. m/z and rt of features).
@@ -115,7 +112,7 @@ alignBat <- alignBatches(
     peakInfo = peakIn, PeakTabNoFill = PTnofill,
     PeakTabFilled = PTfill, batches = meta$batch,
     sampleGroups = meta$grp, selectGroup = "QC",
-    reportPath = "drift_report/"
+    report = FALSE
 )
 ## Extract new peak table
 PT <- alignBat$PTalign
@@ -134,7 +131,4 @@ se <- alignBatches(PeakTabNoFill = se, PeakTabFilled = se,
                    batches = "batch", sampleGroups = "grp", report = FALSE,
                    assay.type1 = "nofill", assay.type2 = "fill", 
                    name = "aligned", rt_col = "rt", mz_col = "mz")
-\dontshow{
-setwd(.old_wd)
-}
 }
