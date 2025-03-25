@@ -62,8 +62,9 @@ assays}
 assays}
 }
 \value{
-A SummarizedExperiment object with the corrected matrix or a list, 
-including the corrected matrix and processing information:
+A SummarizedExperiment object with the corrected and filtered matrix 
+or a list, including the corrected and filtered matrix as well as processing 
+information:
 \itemize{
   \item actionInfo: see what happened to each cluster
   \item testFeatsCorr: to extract drift-corrected data

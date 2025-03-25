@@ -95,9 +95,10 @@ QC samples, and are therefore not directly representative of the sample
 population. Long-term reference QC samples are used for between-batch alignment,
 within-batch drift correction and between-batch normalization.
 
-Let's create a SummarizedExperiment object for demonstration purposes. A 
+Let's create a SummarizedExperiment object in order to demonstrate the original 
+functionality and the new SummarizedExperiment methods in parallel. 
 SummarizedExperiment may also be output from xcms-based preprocessing using 
-`xcms::quantify()`.
+`xcms::quantify()`. 
 
 ```{r}
 peaks <- SimpleList(t(PTnofill), t(PTfill))
@@ -109,6 +110,11 @@ se <- SummarizedExperiment(assays = peaks, colData = sampleData,
     rowData = featureData)
 names(assays(se)) <- c("nofill", "fill")
 ```
+
+Below, we focus on basic usage. In general, the list returned by the original 
+functionality contains processing metadata in addition to modified peak table. 
+The SummarizedExperiment methods return objects with modified peak tables. 
+Please see the documentation for more information (for example, ?alignBatches).
 
 ## Between-batch alignment
 
