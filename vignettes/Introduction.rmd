@@ -186,11 +186,6 @@ while mitigating overfitting to unwanted variation in a single feature.
 long-term reference QC samples was reduced after drift correction for the 
 cluster at large
 
-4. Removal of individual features
-- features were removed batch-wise if the CV of within-batch QC samples after 
-drift correction > 30%
-
-
 ```{r, message = FALSE}
 # Batch B
 batchB <- getBatch(
@@ -233,7 +228,7 @@ HCorr <- correctDrift(
 ```
 
 Similarly, we subset the SummarizedExperiment by batch and perform drift 
-correction, but this time with long-term reference samples for quality 
+correction, but for this example using long-term reference samples for quality 
 indicators.
 
 ```{r, message = FALSE}
@@ -244,7 +239,7 @@ batches <- lapply(batch_labels, function(batch_label) {
 
 batches <- lapply(batches, correctDrift, injections = "inj", 
     sampleGroups = "grp", RefID = "Ref", G = seq(5, 35, by = 3), 
-    modelNames = c("VVE", "VEE"), reportPath = "drift_report/", 
+    modelNames = c("VVE", "VEE"), report = FALSE, 
     assay.type = "aligned", name = "corrected")
 ```
 
@@ -266,7 +261,7 @@ the `population` argument. Features not present in all batches are also
 excluded from the dataset.
 
 ```{r, warning = FALSE}
-mergedData <- mergeBatches(list(BCorr, FCorr, HCorr))
+mergedData <- mergeBatches(list(BCorr, FCorr, HCorr), qualRatio = 0.5)
 normData <- normalizeBatches(
     peakTableCorr = mergedData$peakTableCorr,
     batches = meta$batch, sampleGroup = meta$grp,
@@ -276,15 +271,14 @@ PTnorm <- normData$peakTable
 ```
 
 Merging with `mergeBatches`, as above, includes a quality control step, where 
-features with CV < the limit (supplied to correctDrift()) in a specified 
+features with CV > the limit (supplied to correctDrift()) in a specified 
 proportion of batches (default = 0.5) are excluded. For SummarizedExperiment, 
 we join the batches, keeping features shared across all batches but without 
 filtering features by proportion of quality batches. 
 
 ```{r, results = FALSE}
-common_peaks <- Reduce(intersect, lapply(batches, rownames))
-batches <- lapply(batches, function(batch) batch[common_peaks, ])
 se <- do.call(cbind, batches)
+se <- se[which(apply(assay(se), 1, function(x) any(is.na(x)))), ]
 
 se <- normalizeBatches(peakTableCorr = se, 
     batches = "batch", sampleGroup = "grp", refGroup = "Ref",
@@ -296,7 +290,7 @@ se <- normalizeBatches(peakTableCorr = se,
 The first version of `batchCorr` was written by Carl Brunius. 
 `batchCorr` was developed for Bioconductor by Carl Brunius, 
 Anton Ribbenstedt and Vilhelm Suksi. If you find any bugs or other things to 
-fix, please submit an issue on GitLab! All contributions to the package are 
+fix, please submit an issue on GitHub! All contributions to the package are 
 always welcome!
 
 # Session information

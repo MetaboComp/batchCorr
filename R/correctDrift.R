@@ -36,8 +36,8 @@
 #' information:
 #' \itemize{
 #'   \item actionInfo: see what happened to each cluster
-#'   \item testFeatsCorr: to extract drift-corrected data
-#'   \item testFeatsFinal: to extract drift-corrected data which pass the 
+#'   \item TestFeatsCorr: to extract drift-corrected data
+#'   \item TestFeatsFinal: to extract drift-corrected data which pass the 
 #'     criterion QC CV < CVlimit
 #' }
 #'
@@ -212,12 +212,8 @@ setMethod("correctDrift", signature = c("SummarizedExperiment"),
         injections = colData(peakTable)[[injections]],
         sampleGroups = colData(peakTable)[[sampleGroups]], 
         ...)
-    corrected_mat <- t(corrected$TestFeatsFinal)
-    # Filter peak table by features in corrected peak table, where features
-    # with CV < CVlimit are retained
-    peakTable <- peakTable[
-        which(rownames(peakTable) %in% rownames(corrected_mat)), ]
-
+    corrected_mat <- t(corrected$TestFeatsCorr)
+    
     # Include corrected peak table in object
     assay(peakTable, from_to[[2]]) <- corrected_mat
 
