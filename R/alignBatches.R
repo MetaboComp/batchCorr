@@ -34,7 +34,7 @@
 #' @param rt_col character scalar, name of column for retention time
 #' @param ... parameters with same behavior across methods
 #'
-#' @return a SummarizedExperiment object as PeakTabFill with the the aligned 
+#' @return a SummarizedExperiment object as PeakTabFill with the aligned 
 #' matrix or a list of six:
 #' \itemize{
 #'   \item PTalign: the aligned peak table

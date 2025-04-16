@@ -19,9 +19,10 @@
 #' @param population character scalar, identifier of population samples in 
 #' sampleGroups (default: "all")
 #' @param CVlimit  numeric scalar, coefficient of variance threshold for 
-#' filtering each batch by reference samples (default: 0.3)
+#' normalizing each batch by reference samples (default: 0.3)
 #' @param FCLimit numeric scalar, fold-change between average intensity in 
-#' batches threshold (default: 5)
+#' batches threshold for normalizing each batch by reference samples 
+#' (default: 5)
 #' @param medianZero character scalar, strategy for substituting median value 
 #' for population normalization when median is zero (-> Inf). Either 'mean' or 
 #' 'min' (default: "min, i.e. lowest non-zero value)

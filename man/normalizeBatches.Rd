@@ -37,10 +37,11 @@ normalizeBatches(peakTableCorr, ...)
 sampleGroups (default: "all")}
 
 \item{CVlimit}{numeric scalar, coefficient of variance threshold for 
-filtering each batch by reference samples (default: 0.3)}
+normalizing each batch by reference samples (default: 0.3)}
 
 \item{FCLimit}{numeric scalar, fold-change between average intensity in 
-batches threshold (default: 5)}
+batches threshold for normalizing each batch by reference samples 
+(default: 5)}
 
 \item{medianZero}{character scalar, strategy for substituting median value 
 for population normalization when median is zero (-> Inf). Either 'mean' or 
