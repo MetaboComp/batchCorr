@@ -77,7 +77,7 @@ multiple assays}
 \item{rt_col}{character scalar, name of column for retention time}
 }
 \value{
-a SummarizedExperiment object as PeakTabFill with the the aligned 
+a SummarizedExperiment object as PeakTabFill with the aligned 
 matrix or a list of six:
 \itemize{
   \item PTalign: the aligned peak table
