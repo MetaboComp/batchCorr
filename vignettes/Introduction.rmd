@@ -111,10 +111,11 @@ se <- SummarizedExperiment(assays = peaks, colData = sampleData,
 names(assays(se)) <- c("nofill", "fill")
 ```
 
-Below, we focus on basic usage. In general, the list returned by the original 
-functionality contains processing metadata in addition to modified peak table. 
+Below, we focus on basic usage. The list output for basic data structures 
+includes processing metadata which can be used for troubleshooting.
 The SummarizedExperiment methods return objects with modified peak tables. 
 Please see the documentation for more information (for example, ?alignBatches).
+
 
 ## Between-batch alignment
 
@@ -186,6 +187,8 @@ while mitigating overfitting to unwanted variation in a single feature.
 long-term reference QC samples was reduced after drift correction for the 
 cluster at large
 
+The mixture models used to cluster the drift patterns in `correctDrift()` can fail to converge for some combinations of geometry and cluster number. This results in missing Bayesian Information Criterion (BIC) measures for some models. You can check from which converged models the final model was selected using the "BIC" element in the output for basic data structures.
+
 ```{r, message = FALSE}
 # Batch B
 batchB <- getBatch(
@@ -225,6 +228,8 @@ HCorr <- correctDrift(
     modelNames = c("VVE", "VEE"),
     report = FALSE
 )
+
+HCorr$BIC
 ```
 
 Similarly, we subset the SummarizedExperiment by batch and perform drift 
