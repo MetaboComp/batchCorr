@@ -187,7 +187,13 @@ while mitigating overfitting to unwanted variation in a single feature.
 long-term reference QC samples was reduced after drift correction for the 
 cluster at large
 
-The mixture models used to cluster the drift patterns in `correctDrift()` can fail to converge for some combinations of geometry and cluster number. This results in missing Bayesian Information Criterion (BIC) measures for some models. You can check from which converged models the final model was selected using the "BIC" element in the output for basic data structures.
+The mixture models used to cluster the drift patterns in `correctDrift()` can 
+fail to converge for some combinations of geometry and cluster number. This 
+results in missing Bayesian Information Criterion (BIC) measures for some 
+models. You can check from which converged models the final model was selected 
+using the "BIC" element in the output for basic data structures. To learn more 
+about the model-based clustering used herein, refer to the mclust (e)book
+[@mclust].
 
 ```{r, message = FALSE}
 # Batch B
