@@ -1,7 +1,7 @@
 Package: batchCorr
 Type: Package
 Title: Within And Between Batch Correction Of LC-MS Metabolomics Data
-Version: 0.99.7
+Version: 0.99.8
 Date: 2020-05-29
 Authors@R: c(
     person("Anton", "Ribbenstedt", email = "parasitetwin@gmail.com", role = c("cre"), comment = c(ORCID = "0000-0002-9985-5644")),
